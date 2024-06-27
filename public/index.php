@@ -130,7 +130,7 @@ try {
     </header>
     <main>
       <?php if ($url) : ?>
-        <p><a href="<?= $url ?>"><?= $url ?></a></p>
+        <p><a href="<?= $url ?>">Go to <?= $requestPath ?></a></p>
         <form action="<?= $_SERVER['REQUEST_URI'] ?>" method="get">
           <input type="hidden" name="redirect" value="always">
           <input type="submit" value="Always redirect">
