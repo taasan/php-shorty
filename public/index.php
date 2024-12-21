@@ -69,6 +69,23 @@ try {
 } catch (\Exception $exc) {
     header('HTTP/1.0 500 Internal Server Error');
 }
+
+function qrCode(): QRCode
+{
+    include_once '../lib/qrcode.php';
+
+    $qr = new QRCode();
+    // QR_ERROR_CORRECT_LEVEL_L : 7%
+    // QR_ERROR_CORRECT_LEVEL_M : 15%
+    // QR_ERROR_CORRECT_LEVEL_Q : 25%
+    // QR_ERROR_CORRECT_LEVEL_H : 30%
+    $qr->setErrorCorrectLevel(QR_ERROR_CORRECT_LEVEL_L);
+    $qr->setTypeNumber(4);
+    $url = (empty($_SERVER['HTTPS']) ? 'http' : 'https') . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    $qr->addData($url);
+    $qr->make();
+    return $qr;
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -146,6 +163,10 @@ try {
     .error {
       background-color: salmon;
     }
+    .qr {
+      width: 250px;
+      padding: 3em;
+    }
   </style>
 </head>
 
@@ -161,6 +182,9 @@ try {
           <input type="hidden" name="redirect" value="always">
           <input type="submit" value="Always redirect">
         </form>
+        <div class="qr">
+          <?php qrCode()->printSVG(5); ?>
+        </div>
       <?php elseif ($exc) : ?>
         <?php if ($exc instanceof \PDOException) : ?>
           <p>Oh noes! <q><?= $exc->errorInfo[2] ?></q></p>
