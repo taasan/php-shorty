@@ -165,7 +165,8 @@ function qrCode(): QRCode
     }
     .qr {
       width: 250px;
-      padding: 3em;
+      margin-top: 3em;
+      max-width: fit-content;
     }
   </style>
 </head>
