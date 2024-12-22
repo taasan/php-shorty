@@ -86,6 +86,14 @@ function qrCode(): QRCode
     $qr->make();
     return $qr;
 }
+
+function qrBlob(): string
+{
+    ob_start();
+    qrCode()->printSVG();
+    $data = ob_get_clean();
+    return '<img alt="QR code" src="data:image/svg+xml;base64,' . base64_encode($data) . '"/>';
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -164,9 +172,12 @@ function qrCode(): QRCode
       background-color: salmon;
     }
     .qr {
-      width: 250px;
       margin-top: 3em;
       max-width: fit-content;
+    }
+    .qr img {
+      width: 250px;
+      max-width: 100%;
     }
   </style>
 </head>
@@ -184,7 +195,7 @@ function qrCode(): QRCode
           <input type="submit" value="Always redirect">
         </form>
         <div class="qr">
-          <?php qrCode()->printSVG(5); ?>
+          <?php echo qrBlob(); ?>
         </div>
       <?php elseif ($exc) : ?>
         <?php if ($exc instanceof \PDOException) : ?>
