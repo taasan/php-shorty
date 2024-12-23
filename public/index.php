@@ -29,9 +29,11 @@ class App
         if (!$dsn) {
             $dsn =  ('sqlite:' . __DIR__ . '/../shorty.db');
         }
-        $options = $dsn && str_starts_with($dsn, 'sqlite:') ? [PDO::SQLITE_ATTR_OPEN_FLAGS => PDO::SQLITE_OPEN_READONLY] : null;
-        $pdo = new \PDO($dsn, null, null, $options);
+        $pdo = new \PDO($dsn);
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        if ($pdo instanceof \Pdo\Sqlite) {
+            $pdo->setAttribute(PDO::SQLITE_ATTR_OPEN_FLAGS, PDO::SQLITE_OPEN_READONLY);
+        }
         $this->pdo = $pdo;
     }
 
@@ -45,17 +47,23 @@ class App
 
     public function get_random_quotation(): array|false
     {
-        try {
+        if ($this->isSqlite()) {
             $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
-            return $stmt->fetch(\PDO::FETCH_ASSOC);
-        } catch (\Throwable $exc) {
-            return false;
+        } elseif ($this->isMysql()) {
+            $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RAND() LIMIT 1');
+        } elseif($this->isPostgres()) {
+            $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
         }
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function view_random_quotation(): string
     {
-        $q = $this->get_random_quotation();
+        try {
+            $q = $this->get_random_quotation();
+        } catch (\Throwable $exc) {
+            $q = false;
+        }
         if ($q === false) {
             $q = ['collection' => 'hardcoded', 'quote' => 'Don\'t panic' . "\n\n" . '–Douglas Adams'];
         }
@@ -65,6 +73,26 @@ class App
         }
         $res .= '</blockquote>';
         return $res;
+    }
+
+    private function getDriverName(): string
+    {
+        return $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+
+    private function isMysql(): bool
+    {
+        return $this->getDriverName() === 'mysql';
+    }
+
+    private function isSqlite(): bool
+    {
+        return $this->getDriverName() === 'sqlite';
+    }
+
+    private function isPostgres(): bool
+    {
+        return $this->getDriverName() === 'pgsql';
     }
 }
 
@@ -481,9 +509,11 @@ function qrBlob(): string
         <?php endif; ?>
       <?php elseif ($requestPath) : ?>
         <p><?= $requestPath ?> not found</p>
-      <?php else : ?>
-        <?php echo $app->view_random_quotation(); ?>
-      <?php endif; ?>
+        <?php
+      else :
+          echo $app->view_random_quotation();
+      endif; ?>
+
     </main>
   </section>
   <footer>

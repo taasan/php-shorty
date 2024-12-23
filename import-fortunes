@@ -23,7 +23,7 @@ $encoding = $options['encoding'] ?? null;
 $replace = array_key_exists('replace', $options);
 
 if ($dsn) {
-    $pdo = new \PDO($dsn, null, null, $options);
+    $pdo = new \PDO($dsn);
     $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     $stmt = $pdo->prepare('INSERT INTO quotations (collection, quote) VALUES (?, ?)');
 } else {
