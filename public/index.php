@@ -35,7 +35,7 @@ class App
         $this->pdo = $pdo;
     }
 
-    public function getUrl(string $shortUrl)
+    public function getUrl(string $shortUrl): string|false
     {
         $stmt = $this->pdo->prepare('SELECT url FROM urls WHERE shortUrl = :shortUrl');
         $stmt->execute(['shortUrl' => $shortUrl]);
@@ -45,8 +45,12 @@ class App
 
     public function get_random_quotation(): array|false
     {
-        $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
-        return $stmt->fetch(\PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
+            return $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $exc) {
+            return false;
+        }
     }
 
     public function view_random_quotation(): string
