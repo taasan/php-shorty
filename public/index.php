@@ -448,6 +448,7 @@ function qrBlob(): string
       text-align: center;
     }
     pre {
+      border-radius: 1ex;
       padding: 1em;
     }
     .error {
