@@ -52,7 +52,8 @@ class App
         } elseif ($this->isMysql()) {
             $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RAND() LIMIT 1');
         } elseif($this->isPostgres()) {
-            $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
+            # CREATE EXTENSION tsm_system_rows;
+            $stmt = $this->pdo->query('SELECT * FROM quotations TABLESAMPLE SYSTEM_ROWS(1)');
         }
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
