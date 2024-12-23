@@ -68,11 +68,7 @@ class App
         if ($q === false) {
             $q = ['collection' => 'hardcoded', 'quote' => 'Don\'t panic' . "\n\n" . '–Douglas Adams'];
         }
-        $res = '<blockquote>' . htmlspecialchars($q['quote']);
-        if ($q['source']) {
-            $res .= '<p>' . htmlspecialchars($q['source']) . '</p>';
-        }
-        $res .= '</blockquote>';
+        $res = '<blockquote>' . htmlspecialchars($q['quote']) . '</blockquote>';
         return $res;
     }
 
