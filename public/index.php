@@ -4,7 +4,14 @@
 CREATE TABLE IF NOT EXISTS urls (
      shortUrl TEXT NOT NULL UNIQUE COLLATE NOCASE,
      url TEXT NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS quotations (
+     collection TEXT NOT NULL COLLATE NOCASE,
+     quote TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS collection_quote ON quotations(collection, quote);
 */
 
 declare(strict_types=1);
@@ -35,6 +42,26 @@ class App
         $result = $stmt->fetchColumn();
         return $result;
     }
+
+    public function get_random_quotation(): array|false
+    {
+        $stmt = $this->pdo->query('SELECT * FROM quotations ORDER BY RANDOM() LIMIT 1');
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    public function view_random_quotation(): string
+    {
+        $q = $this->get_random_quotation();
+        if ($q === false) {
+            $q = ['collection' => 'hardcoded', 'quote' => 'Don\'t panic' . "\n\n" . '–Douglas Adams'];
+        }
+        $res = '<blockquote>' . htmlspecialchars($q['quote']);
+        if ($q['source']) {
+            $res .= '<p>' . htmlspecialchars($q['source']) . '</p>';
+        }
+        $res .= '</blockquote>';
+        return $res;
+    }
 }
 
 function alwaysRedirect(): bool
@@ -48,12 +75,12 @@ $exc = null;
 $requestPath = null;
 
 try {
+    $app = new App();
     // Use parse_url() to get only the path component of the URI
     $requestPath = trim(substr(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), 1));
 
     if ($requestPath) {
         if (!str_starts_with($requestPath, '-/')) {
-            $app = new App();
             $url = $app->getUrl($requestPath);
             if (!$url) {
                 header('HTTP/1.0 404 Not Found');
@@ -94,8 +121,8 @@ function qrBlob(): string
     $data = ob_get_clean();
     return '<img alt="QR code" src="data:image/svg+xml;base64,' . base64_encode($data) . '"/>';
 }
-?>
-<!DOCTYPE html>
+
+?><!DOCTYPE html>
 <html>
 
 <head>
@@ -113,7 +140,10 @@ function qrBlob(): string
         --hf-color: white;
         --hf-link-color: #1991d8;
 
-        --svg-fill: var(--hf-color);
+        /* Quote */
+        --q-background-color: inherit;
+        --q-color: inherit;
+        --q-border-color: #78C0A8;
       }
     }
     @media (prefers-color-scheme: light) {
@@ -126,7 +156,15 @@ function qrBlob(): string
         --hf-background-color: #DADFE5;
         --hf-color: #333;
         --hf-link-color: #327AB7;
+
+        /* Quote */
+        --q-background-color: inherit;
+        --q-color: inherit;
+        --q-border-color: #78C0A8;
       }
+    }
+    :root {
+      --svg-fill: var(--hf-color);
     }
     a {
         color: var(--link-color);
@@ -179,6 +217,21 @@ function qrBlob(): string
       width: 250px;
       max-width: 100%;
     }
+    blockquote{
+      white-space: pre;
+      overflow-x: auto;
+      font-size: 1.4em;
+      width: 100%;
+      max-width: fit-content;
+      margin: 0;
+      font-family: Open Sans;
+      font-style: italic;
+      color: var(--q-color);
+      padding: 1.2em;
+      border-left: 8px solid var(--q-border-color);
+      line-height: 1.6;
+      background: var(--q-background-color);
+    }
   </style>
 </head>
 
@@ -210,7 +263,7 @@ function qrBlob(): string
       <?php elseif ($requestPath) : ?>
         <p><?= $requestPath ?> not found</p>
       <?php else : ?>
-        <p>Don't panic!</p>
+        <?php echo $app->view_random_quotation(); ?>
       <?php endif; ?>
     </main>
   </section>

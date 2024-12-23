@@ -1,0 +1,87 @@
+#!/usr/bin/env php
+<?php
+
+$shortopts  = '';
+
+$longopts  = [
+    'dsn:',
+    'encoding:',
+    'replace',
+];
+
+$rest_index = null;
+$options = getopt($shortopts, $longopts, $rest_index);
+$pos_args = array_slice($argv, $rest_index);
+
+if (!count($pos_args)) {
+    fwrite(STDERR, "No fortune databases specified\n");
+    exit(2);
+}
+
+$dsn = $options['dsn'] ?? null;
+$encoding = $options['encoding'] ?? null;
+$replace = array_key_exists('replace', $options);
+
+if ($dsn) {
+    $pdo = new \PDO($dsn, null, null, $options);
+    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    $stmt = $pdo->prepare('INSERT INTO quotations (collection, quote) VALUES (?, ?)');
+} else {
+    $pdo = null;
+}
+
+foreach ($pos_args as $file) {
+    $contents = file_get_contents($file);
+    if ($encoding) {
+        $enc = $encoding;
+    } else {
+        $enc = mb_detect_encoding($contents, ['utf-8', 'windows-1252', 'iso-8859-1'], true);
+    }
+    fprintf(STDERR, 'INFO: Decoding %s using encoding %s%s', $file, $enc, PHP_EOL);
+    $contents = mb_convert_encoding($contents, 'UTF-8', $enc);
+    if ($contents) {
+        $contents = array_unique(array_filter(explode("\n%\n", $contents)));
+        $collection = basename($file, '.u8');
+        if ($pdo) {
+            $pdo->beginTransaction();
+            if ($replace) {
+                $del = $pdo->prepare('DELETE FROM quotations WHERE collection = ?');
+                $del->execute([$collection]);
+            }
+        }
+        try {
+            foreach ($contents as $cookie) {
+                $data = [$collection, $cookie];
+                if ($pdo) {
+                    try {
+                        $stmt->execute($data);
+                    } catch (\PDOException $exc) {
+                        if (str_starts_with($exc->errorInfo[0], '23')) {
+                            fprintf(STDERR, 'WARNING: %s%s', $exc->errorInfo[2], PHP_EOL);
+                            fprintf(STDERR, 'WARNING: Duplicate cookie: file=%s, collection=%s,cookie=%s%s', var_export($file, true), var_export($collection, true), var_export($cookie, true), PHP_EOL);
+                            continue;
+                        } else {
+                            throw $exc;
+                        }
+                    }
+                } else {
+                    fputcsv(STDOUT, $data, ',', '"', '\\');
+                }
+            }
+            if ($pdo) {
+                $pdo->commit();
+            }
+        } catch (\Throwable $exc) {
+            if ($pdo) {
+                $pdo->rollBack();
+            }
+            fprintf(STDERR, 'I have a bad feeling about this: %s%s%s%s', $file, PHP_EOL, $cookie, PHP_EOL);
+            fprintf(STDERR, '%s%s', $exc->__toString(), PHP_EOL);
+            continue;
+            throw $exc;
+        }
+    } else {
+        fprintf(STDERR, 'Failed to open file %s', $file);
+        fwrite(STDERR, "\n");
+    }
+}
