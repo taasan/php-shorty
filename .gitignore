@@ -1,2 +1,3 @@
 *.db
 public/.htaccess
+vendor

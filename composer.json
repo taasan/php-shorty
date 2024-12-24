@@ -1,0 +1,14 @@
+{
+  "name": "taasan/shorty",
+  "autoload": {
+    "psr-4": {
+      "App\\": "lib/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Trond Aasan"
+    }
+  ],
+  "require": {}
+}
