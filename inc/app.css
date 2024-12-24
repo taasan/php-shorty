@@ -75,6 +75,7 @@ footer {
 pre {
   border-radius: 1ex;
   padding: 1em;
+  overflow: scroll;
 }
 .error {
   background-color: salmon;

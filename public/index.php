@@ -1,6 +1,5 @@
 <?php
-// require __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../lib/App.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $url = null;
 $exc = null;
@@ -18,7 +17,7 @@ function get_dsn()
     return $dsn;
 }
 try {
-    $app = new App(get_dsn(), DEV_MODE);
+    $app = new \App\Shorty(get_dsn(), DEV_MODE);
     // Use parse_url() to get only the path component of the URI
     $requestPath = trim(substr(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), 1));
 
@@ -27,7 +26,7 @@ try {
             $url = $app->getUrl($requestPath);
             if (!$url) {
                 header('HTTP/1.0 404 Not Found');
-            } elseif (alwaysRedirect()) {
+            } elseif (\App\alwaysRedirect()) {
                 // Expires in 10 years
                 setcookie('shorty_redirect', 'always', time() + (10 * 365 * 24 * 60 * 60));
                 header('HTTP/1.1 302 Found');
@@ -70,7 +69,7 @@ try {
           <input type="submit" value="Always redirect">
         </form>
         <div class="qr">
-          <?php echo qrBlob(); ?>
+          <?php echo \App\qrBlob(); ?>
         </div>
       <?php elseif ($exc) : ?>
         <?php if ($exc instanceof \PDOException) : ?>

@@ -17,43 +17,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS collection_quote ON quotations(collection, quo
 
 declare(strict_types=1);
 
-class Database
-{
-    private readonly string $_dsn;
-    private readonly \PDO $_pdo;
-    public readonly bool $IS_SQLITE;
-    public readonly bool $IS_MYSQL;
-    public readonly bool $IS_POSTGRES;
+namespace App;
 
-    public function __construct(string $dsn)
-    {
-        $this->_dsn = $dsn;
-    }
-
-    private function _init_pdo(): \PDO
-    {
-        $rp = new ReflectionProperty(get_class($this), '_pdo');
-        if (!$rp->isInitialized($this)) {
-            $this->_pdo = new \PDO($this->_dsn);
-            $driver_name = $this->_pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-            $this->IS_SQLITE = 'sqlite' === $driver_name;
-            $this->IS_MYSQL = 'mysql' === $driver_name;
-            $this->IS_POSTGRES = 'pgsql' === $driver_name;
-            $this->_pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            if ($this->IS_SQLITE) {
-                $this->_pdo->setAttribute(PDO::SQLITE_ATTR_OPEN_FLAGS, PDO::SQLITE_OPEN_READONLY);
-            }
-        }
-        return $this->_pdo;
-    }
-
-    public function getPdo(): \PDO
-    {
-        return $this->_init_pdo();
-    }
-}
-
-class App
+class Shorty
 {
     private readonly Database $_db;
     public readonly bool $DEV_MODE;
@@ -114,10 +80,10 @@ function alwaysRedirect(): bool
         || (isset($_COOKIE[$cookie_name]) && 'always' === $_COOKIE[$cookie_name]);
 }
 
-function qrCode(): QRCode
+function qrCode(): \QRCode
 {
     include_once __DIR__ . '/qrcode.php';
-    $qr = new QRCode();
+    $qr = new \QRCode();
     // QR_ERROR_CORRECT_LEVEL_L : 7%
     // QR_ERROR_CORRECT_LEVEL_M : 15%
     // QR_ERROR_CORRECT_LEVEL_Q : 25%
